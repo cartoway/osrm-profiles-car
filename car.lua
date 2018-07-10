@@ -225,6 +225,8 @@ function setup()
       'living_street',
       'unclassified',
       'service',
+      'pedestrian',
+      'track',
       'winter_road',
       'ice_road'
     },
