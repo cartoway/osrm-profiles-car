@@ -11,7 +11,10 @@ find_access_tag = require("lib/access").find_access_tag
 limit = require("lib/maxspeed").limit
 Utils = require("lib/utils")
 Measure = require("lib/measure")
-Tags = require('lib/tags')
+
+Ferries_withlist = require('lib/ferries_withlist')
+Mapotempo_classes = require('lib/mapotempo_classes')
+Startpoint_secure = require('lib/startpoint_secure')
 
 function setup()
   return {
@@ -330,89 +333,7 @@ function setup()
 end
 
 -- Load white list of ferries
-local ferries_withlist_ids = {}
-local file = assert(io.open(debug.getinfo(1).source:sub(2):match("(.*/)") .. "ferries-withlist.csv"))
-if file then
-  for line in file:lines() do
-    if tonumber(line) then
-      ferries_withlist_ids[tonumber(line)] = true
-    end
-  end
-end
-
-function Handlers.ferries_withlist(way,result,data,profile)
-  if ferries_withlist_ids[way:id()] ~= nil then
-    return false
-  end
-end
-
--- determine if this way can be used as a start/end point for routing
-function Handlers.startpoint_secure(way,result,data,profile)
-  local highway = way:get_value_by_key("highway")
-  local tunnel = way:get_value_by_key("tunnel")
-
-  if highway ~= "motorway" and (not tunnel or tunnel == "") then
-    Handlers.handle_startpoint(way,result,data,profile)
-  else
-    result.is_startpoint = false
-  end
-end
-
-local highway_bits = Sequence {
-  trunk           = {false, false, false},
-  trunk_link      = {false, false, false}, -- same
-  primary         = {false, false, true},
-  primary_link    = {false, false, true}, -- same
-  secondary       = {false, true, false},
-  secondary_link  = {false, true, false}, -- same
-  tertiary        = {false, true, true},
-  tertiary_link   = {false, true, true}, -- same
-
-  unclassified    = {true, false, false},
-  residential     = {true, false, false}, -- same
-  living_street   = {true, false, true},
-  service         = {true, false, true}, -- same
-  track           = {true, false, true}, -- same
-  -- unassigned        = {true, true, false},
-  -- unassigned        = {true, true, true},
-}
-
--- add class information
-function classes(profile,way,result,data)
-    local forward_toll, backward_toll = Tags.get_forward_backward_by_key(way, data, "toll")
-    local forward_route, backward_route = Tags.get_forward_backward_by_key(way, data, "route")
-
-    if forward_toll == "yes" then
-        result.forward_classes["toll"] = true
-    end
-    if backward_toll == "yes" then
-        result.backward_classes["toll"] = true
-    end
-
-    if result.forward_restricted then
-        result.forward_classes["restricted"] = true
-    end
-    if result.backward_restricted then
-        result.backward_classes["restricted"] = true
-    end
-
-    if data.highway == "motorway" or data.highway == "motorway_link" then
-        result.forward_classes["motorway"] = true
-        result.backward_classes["motorway"] = true
-    end
-
-    local w_bits = highway_bits[data.highway]
-    if w_bits then
-        result.forward_classes["w1"], result.forward_classes["w2"], result.forward_classes["w3"] = unpack(w_bits)
-        result.backward_classes["w1"], result.backward_classes["w2"], result.backward_classes["w3"] = unpack(w_bits)
-    end
-end
-
-function get_restrictions(vector)
-  for i,v in ipairs(profile.restrictions) do
-    vector:Add(v)
-  end
-end
+Ferries_withlist.load("ferries-withlist.csv")
 
 function process_node(profile, node, result, relations)
   -- parse access and barrier tags
@@ -511,9 +432,8 @@ function process_way(profile, way, result, relations)
     WayHandlers.destinations,
 
     -- check whether we're using a special transport mode
-    WayHandlers.ferries,
+    Ferries_withlist.ferries_withlist,
     WayHandlers.movables,
-    Handlers.ferries_withlist,
 
     -- handle service road restrictions
     WayHandlers.service,
@@ -528,7 +448,7 @@ function process_way(profile, way, result, relations)
     WayHandlers.penalties,
 
     -- compute class labels
-    classes,
+    Mapotempo_classes.classes,
 
     -- handle turn lanes and road classification, used for guidance
     WayHandlers.turn_lanes,
@@ -536,8 +456,7 @@ function process_way(profile, way, result, relations)
 
     -- handle various other flags
     WayHandlers.roundabouts,
-    WayHandlers.startpoint,
-    Handlers.startpoint_secure,
+    Startpoint_secure.startpoint_secure,
     WayHandlers.driving_side,
 
     -- set name, ref and pronunciation
