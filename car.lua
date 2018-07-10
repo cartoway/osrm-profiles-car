@@ -185,7 +185,9 @@ function setup()
       'residential',
       'living_street',
       'unclassified',
-      'service'
+      'service',
+      'pedestrian',
+      'track',
     },
 
     construction_whitelist = Set {
