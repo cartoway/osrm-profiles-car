@@ -71,6 +71,7 @@ function setup()
       'motor_vehicle',
       'vehicle',
       'permissive',
+      'private',
       'designated',
       'hov'
     },
@@ -82,8 +83,8 @@ function setup()
       'emergency',
       'psv',
       'customers',
-      'private',
-      'delivery',
+--      'private',
+--      'delivery',
       'destination'
     },
 
@@ -153,7 +154,10 @@ function setup()
         unclassified    = 25,
         residential     = 25,
         living_street   = 10,
-        service         = 15
+        road            = 20,
+        service         = 15,
+        pedestrian      = 5,
+        track           = 5
       }
     },
 
@@ -322,6 +326,41 @@ function setup()
   }
 end
 
+-- Load white list of ferries
+local ferries_withlist_ids = {}
+local file = assert(io.open(debug.getinfo(1).source:sub(2):match("(.*/)") .. "ferries-withlist.csv"))
+if file then
+  for line in file:lines() do
+    if tonumber(line) then
+      ferries_withlist_ids[tonumber(line)] = true
+    end
+  end
+end
+
+function Handlers.ferries_withlist(way,result,data,profile)
+  if ferries_withlist_ids[way:id()] ~= nil then
+    return false
+  end
+end
+
+-- determine if this way can be used as a start/end point for routing
+function Handlers.startpoint_secure(way,result,data,profile)
+  local highway = way:get_value_by_key("highway")
+  local tunnel = way:get_value_by_key("tunnel")
+
+  if highway ~= "motorway" and (not tunnel or tunnel == "") then
+    Handlers.handle_startpoint(way,result,data,profile)
+  else
+    result.is_startpoint = false
+  end
+end
+
+function get_restrictions(vector)
+  for i,v in ipairs(profile.restrictions) do
+    vector:Add(v)
+  end
+end
+
 function process_node(profile, node, result, relations)
   -- parse access and barrier tags
   local access = find_access_tag(node, profile.access_tags_hierarchy)
@@ -421,6 +460,7 @@ function process_way(profile, way, result, relations)
     -- check whether we're using a special transport mode
     WayHandlers.ferries,
     WayHandlers.movables,
+    Handlers.ferries_withlist,
 
     -- handle service road restrictions
     WayHandlers.service,
@@ -444,6 +484,7 @@ function process_way(profile, way, result, relations)
     -- handle various other flags
     WayHandlers.roundabouts,
     WayHandlers.startpoint,
+    Handlers.startpoint_secure,
     WayHandlers.driving_side,
 
     -- set name, ref and pronunciation
