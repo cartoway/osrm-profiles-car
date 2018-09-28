@@ -517,17 +517,16 @@ function process_way(profile, way, result, relations)
     WayHandlers.maxspeed,
     WayHandlers.surface,
 
-    -- apply vehicle-specific maximum speed cap before calculating rates
-    WayHandlers.vehicle_speed_cap,
-
-    WayHandlers.penalties,
-
     -- compute class labels
     WayHandlers.classes,
     Mapotempo.classes,
 
+    -- apply vehicle-specific maximum speed cap before calculating rates
+    WayHandlers.vehicle_speed_cap,
+
     -- set penalties after setting classes with urban density
     Mapotempo.penalties,
+    WayHandlers.penalties,
 
     -- handle turn lanes and road classification, used for guidance
     WayHandlers.turn_lanes,
