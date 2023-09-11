@@ -150,7 +150,7 @@ function Urban_density.speed_coef(way)
 
   redis_conn:del(way:id())
   local speeds_v = {speeds[1], speeds[2], speeds[3], speeds[4], way:version()}
-  redis_conn:rpush(way:id(), unpack(speeds_v))
+  redis_conn:rpush(way:id(), table.unpack(speeds_v))
 
   return speeds
 end
