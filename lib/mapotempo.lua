@@ -50,8 +50,8 @@ function Mapotempo.classes(profile,way,result,data)
     if allowed_classes["w1"] and allowed_classes["w2"] and allowed_classes["w3"] then
         local w_bits = highway_bits[data.highway]
         if w_bits then
-            result.forward_classes["w1"], result.forward_classes["w2"], result.forward_classes["w3"] = unpack(w_bits)
-            result.backward_classes["w1"], result.backward_classes["w2"], result.backward_classes["w3"] = unpack(w_bits)
+            result.forward_classes["w1"], result.forward_classes["w2"], result.forward_classes["w3"] = table.unpack(w_bits)
+            result.backward_classes["w1"], result.backward_classes["w2"], result.backward_classes["w3"] = table.unpack(w_bits)
         end
     end
 
@@ -64,8 +64,8 @@ function Mapotempo.classes(profile,way,result,data)
         end
     end
 
-    result.forward_classes["l1"], result.forward_classes["l2"] = unpack(landuse_bits[max_index])
-    result.backward_classes["l1"], result.backward_classes["l2"] = unpack(landuse_bits[max_index])
+    result.forward_classes["l1"], result.forward_classes["l2"] = table.unpack(landuse_bits[max_index])
+    result.backward_classes["l1"], result.backward_classes["l2"] = table.unpack(landuse_bits[max_index])
 end
 
 -- get speed penalities
