@@ -21,7 +21,7 @@ function Obstacles.process_node(profile, node)
                 direction = node:get_value_by_key("traffic_signals:direction") or direction
                 -- traffic_signal_penalty is deprecated
                 -- but there's still unit_tests using it
-                duration = profile.properties.traffic_signal_penalty or 2
+                duration = profile.properties.traffic_signal_penalty or 1
             end
             if type == obstacle_type.stop then
                 if node:get_value_by_key("stop") == "minor" then
