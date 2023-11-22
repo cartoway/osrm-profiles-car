@@ -7,17 +7,17 @@ function Urban_density.assert_urban_database()
 end
 
 speeds_interurban = {
-  motorway        = 115,
+  motorway        =  45,
   motorway_link   =  45,
-  trunk           = 100,
+  trunk           =  45,
   trunk_link      =  40,
-  primary         =  77,
+  primary         =  45,
   primary_link    =  30,
-  secondary       =  73,
+  secondary       =  45,
   secondary_link  =  25,
-  tertiary        =  68,
+  tertiary        =  45,
   tertiary_link   =  20,
-  unclassified    =  58,
+  unclassified    =  45,
   residential     =  30,
   living_street   =  20,
   service         =  20,
@@ -27,9 +27,9 @@ speeds_interurban = {
 }
 
 speeds_urban = {
-  motorway        = 90,
+  motorway        = 45,
   motorway_link   = 45,
-  trunk           = 75,
+  trunk           = 45,
   trunk_link      = 37,
   primary         = 33,
   primary_link    = 15,
@@ -47,9 +47,9 @@ speeds_urban = {
 }
 
 speeds_urban_dense = {
-  motorway        = 70,
-  motorway_link   = 35,
-  trunk           = 58,
+  motorway        = 45,
+  motorway_link   = 45,
+  trunk           = 45,
   trunk_link      = 27,
   primary         = 15,
   primary_link    =  9,
@@ -156,10 +156,10 @@ function Urban_density.speed_coef(way)
 end
 
 local max_speeds = {
-  [130] = {115, 90, 90, 70},
-  [110] = {100, 75, 75, 58},
-  [90] = {85, 60, 60, 43},
-  [50] = {47, 33, 33, 15},
+  [130] = {45, 45, 45, 45},
+  [110] = {45, 45, 45, 45},
+  [90] = {45, 45, 45, 43},
+  [50] = {45, 33, 33, 15},
   [30] = {29, 19, 19, 9},
   [20] = {20, 13, 13, 8},
   [0] = {0, 0, 0, 0}
