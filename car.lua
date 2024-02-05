@@ -62,6 +62,15 @@ function setup()
     vehicle_length = 4.8, -- in meters, 4.8m is the length of large or family car
     vehicle_weight = 2000, -- in kilograms
 
+    -- Large vehicule
+    -- Size of the vehicle, to be limited by physical restriction of the way
+    vehicle_large_height = 2.5, -- in meters, 2.5m is the height of van
+    vehicle_large_width = 1.9, -- in meters, ways with narrow tag are considered narrower than 2.2m
+
+    -- Size of the vehicle, to be limited mostly by legal restriction of the way
+    vehicle_large_length = 4.8, -- in meters, 4.8m is the length of large or family car
+    vehicle_large_weight = 3500, -- in kilograms
+
     -- Optional: upper limit for all speeds (e.g., 87 for trucks)
     -- When set, no derived speed will exceed this value
     -- When nil (default), no additional capping is applied
@@ -156,6 +165,7 @@ function setup()
         'toll', 'motorway', 'track',
         -- Higwhay encoding bits
         -- 'w1', 'w2', 'w3',
+        'notForLargeVehicule',
     },
 
     -- classes to support for exclude flags
@@ -164,6 +174,7 @@ function setup()
         Set {'motorway'},
         Set {'toll', 'motorway'},
         Set {'track'},
+        Set {'notForLargeVehicule'},
     },
 
     avoid = Set {
