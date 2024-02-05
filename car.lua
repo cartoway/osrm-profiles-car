@@ -166,6 +166,7 @@ function setup()
         -- Higwhay encoding bits
         -- 'w1', 'w2', 'w3',
         'notForLargeVehicule',
+        'lowEmissionZone',
     },
 
     -- classes to support for exclude flags
@@ -175,6 +176,7 @@ function setup()
         Set {'toll', 'motorway'},
         Set {'track'},
         Set {'notForLargeVehicule'},
+        Set {'lowEmissionZone'},
     },
 
     avoid = Set {
