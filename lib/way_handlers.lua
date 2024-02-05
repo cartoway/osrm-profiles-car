@@ -477,6 +477,22 @@ function WayHandlers.handle_height(profile,way,result,data)
   forward = Measure.get_max_height(forward,way)
   backward = Measure.get_max_height(backward,way)
 
+  local allowedClassesNotForLargeVehicule = false
+  for k, v in pairs(profile.classes) do
+    if v == "notForLargeVehicule" then
+      allowedClassesNotForLargeVehicule = true
+      break
+    end
+  end
+
+  if allowedClassesNotForLargeVehicule and forward and forward < profile.vehicle_large_height then
+    result.forward_classes["notForLargeVehicule"] = true
+  end
+
+  if allowedClassesNotForLargeVehicule and backward and backward < profile.vehicle_large_height then
+    result.backward_classes["notForLargeVehicule"] = true
+  end
+
   if forward and forward < profile.vehicle_height then
     result.forward_mode = mode.inaccessible
   end
@@ -492,11 +508,22 @@ function WayHandlers.handle_width(profile,way,result,data)
   local forward, backward = Tags.get_forward_backward_by_set(way,data,keys)
   local narrow = way:get_value_by_key('narrow')
 
+  local allowedClassesNotForLargeVehicule = false
+  for k, v in pairs(profile.classes) do
+    if v == "notForLargeVehicule" then
+      allowedClassesNotForLargeVehicule = true
+      break
+    end
+  end
+
   if ((forward and forward == 'narrow') or (narrow and narrow == 'yes')) and profile.vehicle_width > 2.2 then
     result.forward_mode = mode.inaccessible
   elseif forward then
     forward = Measure.get_max_width(forward)
-    if forward and forward <= profile.vehicle_width then
+    if allowedClassesNotForLargeVehicule and forward and forward <  profile.vehicle_large_width then
+      result.forward_classes["notForLargeVehicule"] = true
+    end
+    if allowedClassesNotForLargeVehicule and forward and forward <= profile.vehicle_width then
       result.forward_mode = mode.inaccessible
     end
   end
@@ -505,6 +532,9 @@ function WayHandlers.handle_width(profile,way,result,data)
     result.backward_mode = mode.inaccessible
   elseif backward then
     backward = Measure.get_max_width(backward)
+    if allowedClassesNotForLargeVehicule and backward and backward <  profile.vehicle_large_width then
+      result.backward_classes["notForLargeVehicule"] = true
+    end
     if backward and backward <= profile.vehicle_width then
       result.backward_mode = mode.inaccessible
     end
@@ -517,6 +547,22 @@ function WayHandlers.handle_weight(profile,way,result,data)
   local forward, backward = Tags.get_forward_backward_by_set(way,data,keys)
   forward = Measure.get_max_weight(forward)
   backward = Measure.get_max_weight(backward)
+
+  local allowedClassesNotForLargeVehicule = false
+  for k, v in pairs(profile.classes) do
+    if v == "notForLargeVehicule" then
+      allowedClassesNotForLargeVehicule = true
+      break
+    end
+  end
+
+  if allowedClassesNotForLargeVehicule and forward and forward < profile.vehicle_large_weight then
+    result.forward_classes["notForLargeVehicule"] = true
+  end
+
+  if allowedClassesNotForLargeVehicule and backward and backward < profile.vehicle_large_weight then
+    result.backward_classes["notForLargeVehicule"] = true
+  end
 
   if forward and forward < profile.vehicle_weight then
     result.forward_mode = mode.inaccessible
@@ -533,6 +579,22 @@ function WayHandlers.handle_length(profile,way,result,data)
   local forward, backward = Tags.get_forward_backward_by_set(way,data,keys)
   forward = Measure.get_max_length(forward)
   backward = Measure.get_max_length(backward)
+
+  local allowedClassesNotForLargeVehicule = false
+  for k, v in pairs(profile.classes) do
+    if v == "notForLargeVehicule" then
+      allowedClassesNotForLargeVehicule = true
+      break
+    end
+  end
+
+  if allowedClassesNotForLargeVehicule and forward and forward < profile.vehicle_large_length then
+    result.forward_classes["notForLargeVehicule"] = true
+  end
+
+  if allowedClassesNotForLargeVehicule and backward and backward < profile.vehicle_large_length then
+    result.backward_classes["notForLargeVehicule"] = true
+  end
 
   if forward and forward < profile.vehicle_length then
     result.forward_mode = mode.inaccessible
