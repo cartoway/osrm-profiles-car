@@ -349,6 +349,15 @@ function WayHandlers.classes(profile,way,result,data)
         result.forward_classes["motorway"] = true
         result.backward_classes["motorway"] = true
     end
+
+    if allowed_classes["lowEmissionZone"] then
+      local tunnel = way:get_value_by_key("tunnel")
+      local low_emission_zone = way:get_location_tag('low_emission_zone')
+      if low_emission_zone == "true" and (not tunnel or tunnel == "") then
+          result.forward_classes["lowEmissionZone"] = true
+          result.backward_classes["lowEmissionZone"] = true
+      end
+    end
 end
 
 -- reduce speed on bad surfaces
