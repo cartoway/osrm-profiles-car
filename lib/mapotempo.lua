@@ -64,8 +64,10 @@ function Mapotempo.classes(profile,way,result,data)
         end
     end
 
-    result.forward_classes["l1"], result.forward_classes["l2"] = table.unpack(landuse_bits[max_index])
-    result.backward_classes["l1"], result.backward_classes["l2"] = table.unpack(landuse_bits[max_index])
+    if allowed_classes["l1"] and allowed_classes["l2"] then
+      result.forward_classes["l1"], result.forward_classes["l2"] = table.unpack(landuse_bits[max_index])
+      result.backward_classes["l1"], result.backward_classes["l2"] = table.unpack(landuse_bits[max_index])
+    end
 end
 
 -- get speed penalities
