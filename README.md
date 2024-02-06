@@ -28,6 +28,7 @@ master - OSRM-Car
     │   └── car-urban
     └── car
         ├── car-distance
+        ├── scooter
         └── truck-medium
 ```
 
