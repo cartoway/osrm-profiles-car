@@ -153,7 +153,9 @@ function setup()
     },
 
     classes = Sequence {
-        'toll', 'motorway', 'track', 'w1', 'w2', 'w3'
+        'toll', 'motorway', 'track',
+        -- Higwhay encoding bits
+        -- 'w1', 'w2', 'w3',
     },
 
     -- classes to support for exclude flags
