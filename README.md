@@ -8,13 +8,13 @@ Based on [OSRM](https://github.com/Project-OSRM/osrm-backend/) car profiles.
 
 `master` branch follows OSRM default car profiles.
 
-`mapotempo` branch flows `master` branch, content common customization.
+`common` branch follows `master` branch, and content common customization.
 
-`car-interurban` branch flows `mapotempo` for interurban ride.
+`car-interurban` branch follows `common` for interurban ride.
 
 `car-urban` branch follows `car-interurban` adjusted for urban ride.
 
-`car` branch follows `mapotempo`, auto adjust speed based on land use.
+`car` branch follows `common`, auto adjust speed based on land use.
 
 `car-distance` branch follows `car` but for smart-shortest routing.
 
@@ -23,7 +23,7 @@ Based on [OSRM](https://github.com/Project-OSRM/osrm-backend/) car profiles.
 
 ```
 master - OSRM-Car
-└── mapotempo
+└── common
     ├── car-interurban
     │   └── car-urban
     └── car
