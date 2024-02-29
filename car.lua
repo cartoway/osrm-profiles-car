@@ -141,7 +141,7 @@ function setup()
         -- Higwhay encoding bits
         -- 'w1', 'w2', 'w3',
         -- Landuse encoding bits
-        'l1', 'l2',
+        -- 'l1', 'l2',
         'notForLargeVehicule',
         'lowEmissionZone',
     },
