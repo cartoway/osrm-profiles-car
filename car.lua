@@ -25,7 +25,7 @@ function setup()
   Urban_density.assert_urban_database()
   return {
     properties = {
-      max_speed_for_map_matching      = 180/3.6, -- 180kmph -> m/s
+      max_speed_for_map_matching      = 150/3.6, -- 150kmph -> m/s
       -- For routing based on duration, but weighted for preferring certain roads
       weight_name                     = 'routability',
       -- For shortest duration without penalties for accessibility
@@ -33,7 +33,7 @@ function setup()
       -- For shortest distance without penalties for accessibility
       -- weight_name                     = 'distance',
       process_call_tagless_node      = false,
-      u_turn_penalty                 = 20,
+      u_turn_penalty                 = 30,
       continue_straight_at_waypoint  = true,
       use_turn_restrictions          = true,
       left_hand_driving              = false,
@@ -43,7 +43,7 @@ function setup()
     default_speed             = function(way) return Urban_density.default_speed(way) end, -- function
     oneway_handling           = true,
     side_road_multiplier      = 0.8,
-    turn_penalty              = 7.5,
+    turn_penalty              = 25,
     speed_reduction           = 0.8, -- Not Used
     turn_bias                 = 1.075,
     cardinal_directions       = false,
@@ -60,12 +60,11 @@ function setup()
     priority_penalty          = 0.7,
 
     -- Size of the vehicle, to be limited by physical restriction of the way
-    vehicle_height = 2.0, -- in meters, 2.0m is the height slightly above biggest SUVs
-    vehicle_width = 1.9, -- in meters, ways with narrow tag are considered narrower than 2.2m
-
+    vehicle_height = 3.5, -- in meters
+    vehicle_width = 2.45, -- in meters
     -- Size of the vehicle, to be limited mostly by legal restriction of the way
-    vehicle_length = 4.8, -- in meters, 4.8m is the length of large or family car
-    vehicle_weight = 2000, -- in kilograms
+    vehicle_length = 8.3, -- in meters
+    vehicle_weight = 7500, -- in kilograms
 
     -- Large vehicule
     -- Size of the vehicle, to be limited by physical restriction of the way
@@ -79,7 +78,7 @@ function setup()
     -- Optional: upper limit for all speeds (e.g., 87 for trucks)
     -- When set, no derived speed will exceed this value
     -- When nil (default), no additional capping is applied
-    vehicle_max_speed = nil, -- in km/h
+    vehicle_max_speed = 110, -- in km/h
 
     -- a list of suffixes to suppress in name change instructions. The suffixes also include common substrings of each other
     suffix_list = {
@@ -201,6 +200,24 @@ function setup()
     speeds = function(way) return Urban_density.speeds(way) end, -- function
 
     maxspeeds = function(way, max_speed) return Urban_density.maxspeeds(way, max_speed) end, -- function
+
+    highway_penalties = {
+      motorway        = 1,
+      motorway_link   = 1,
+      trunk           = 1,
+      trunk_link      = 1,
+      primary         = 1,
+      primary_link    = 1,
+      secondary       = 1,
+      secondary_link  = 1,
+      tertiary        = 0.9,
+      tertiary_link   = 0.9,
+      unclassified    = 0.8,
+      residential     = 0.7,
+      living_street   = 0.3,
+      service         = 0.2,
+      track           = 0.1
+    },
 
     service_penalties = {
       alley             = 0.5,
@@ -516,6 +533,11 @@ function process_way(profile, way, result, relations)
     WayHandlers.speed,
     WayHandlers.maxspeed,
     WayHandlers.surface,
+
+    -- set penalty to try to follow legal access restriction
+    WayHandlers.handle_weight,
+    WayHandlers.handle_length,
+    WayHandlers.handle_hgv_access,
 
     -- compute class labels
     WayHandlers.classes,
