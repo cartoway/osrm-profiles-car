@@ -405,6 +405,12 @@ end
 function WayHandlers.penalties(profile,way,result,data)
   -- heavily penalize a way tagged with all HOV lanes
   -- in order to only route over them if there is no other option
+  local highway_penalty = 1.0
+  local highway = way:get_value_by_key("highway")
+  if highway and profile.highway_penalties[highway] then
+    highway_penalty = profile.highway_penalties[highway]
+  end
+
   local service_penalty = 1.0
   local service = way:get_value_by_key("service")
   if service and profile.service_penalties[service] then
@@ -472,8 +478,8 @@ function WayHandlers.penalties(profile,way,result,data)
     end
   end
 
-  local forward_penalty = math.min(service_penalty, width_penalty, alternating_penalty, sideroad_penalty, priority_forward_penalty)
-  local backward_penalty = math.min(service_penalty, width_penalty, alternating_penalty, sideroad_penalty, priority_backward_penalty)
+  local forward_penalty = math.min(highway_penalty, service_penalty, width_penalty, alternating_penalty, sideroad_penalty, priority_forward_penalty)
+  local backward_penalty = math.min(highway_penalty, service_penalty, width_penalty, alternating_penalty, sideroad_penalty, priority_backward_penalty)
 
   if profile.properties.weight_name == 'routability' then
     if result.forward_speed > 0 then
@@ -642,7 +648,6 @@ end
 -- handle maxweight tags
 function WayHandlers.handle_weight(profile,way,result,data)
   local keys = Sequence { 'maxweightrating', 'maxweight' }
-  local forwards, backwards = Tags.get_forward_backward_list_from_set(way,data,keys)
 
   local allowedClassesNotForLargeVehicule = false
   for k, v in pairs(profile.classes) do
@@ -652,25 +657,61 @@ function WayHandlers.handle_weight(profile,way,result,data)
     end
   end
 
-  for _, weight in ipairs(forwards or {}) do
-    weight = Measure.get_max_weight(weight)
-    if allowedClassesNotForLargeVehicule and weight and weight < profile.vehicle_large_weight then
-      result.forward_classes["notForLargeVehicule"] = true
-    end
-    if weight and weight < profile.vehicle_weight then
-      result.forward_mode = mode.inaccessible
-      break
+  local forward = nil
+  local forward_conditional = nil
+  for _, key in ipairs(keys or {}) do
+    local weight, _ = Tags.get_forward_backward_by_key(way,data,key)
+    if weight then
+      weight = Measure.get_max_weight(weight)
+
+      if allowedClassesNotForLargeVehicule and weight and weight < profile.vehicle_large_weight then
+        result.forward_classes["notForLargeVehicule"] = true
+      end
+      if weight and (weight <= profile.vehicle_weight and (not forward or weight < forward)) then
+        forward = weight
+        forward_conditional, _ = Tags.get_forward_backward_by_key(way,data,key .. ':conditional')
+      end
     end
   end
 
-  for _, weight in ipairs(backwards or {}) do
-    weight = Measure.get_max_weight(weight)
-    if allowedClassesNotForLargeVehicule and weight and weight < profile.vehicle_large_weight then
-      result.backward_classes["notForLargeVehicule"] = true
+  if forward and forward < profile.vehicle_weight then
+    if forward_conditional and (string.match(forward_conditional, 'no(ne)? ?@') or string.match(forward_conditional, 'destination') or string.match(forward_conditional, 'delivery')) then
+      -- Discourage usage
+      -- But keep the rate at least 1 m/s to keep it passable
+      result.forward_rate = math.max(1, math.min(result.forward_rate, (result.forward_speed * 0.7) / 3.6))
+    else
+      -- No legal access at any condition, set a large weight
+      -- But keep the rate at least 1 m/s to keep it passable
+      result.forward_rate = math.max(1, math.min(result.forward_rate, (result.forward_speed * 0.2) / 3.6))
     end
-    if weight and weight < profile.vehicle_weight then
-      result.backward_mode = mode.inaccessible
-      break
+  end
+
+  local backward = nil
+  local backward_conditional = nil
+  for _, key in ipairs(keys or {}) do
+    local _, weight = Tags.get_forward_backward_by_key(way,data,key)
+    if weight then
+      weight = Measure.get_max_weight(weight)
+
+      if allowedClassesNotForLargeVehicule and weight and weight < profile.vehicle_large_weight then
+        result.backward_classes["notForLargeVehicule"] = true
+      end
+      if weight and (weight <= profile.vehicle_weight and (not backward or weight < backward)) then
+        backward = weight
+        _, backward_conditional = Tags.get_forward_backward_by_key(way,data,key .. ':conditional')
+      end
+    end
+  end
+
+  if backward and backward < profile.vehicle_weight then
+    if backward_conditional and (string.match(backward_conditional, 'no(ne)? ?@') or string.match(backward_conditional, 'destination') or string.match(backward_conditional, 'delivery')) then
+      -- Discourage usage
+      -- But keep the rate at least 1 m/s to keep it passable
+      result.backward_rate = math.max(1, math.min(result.backward_rate, (result.backward_speed * 0.7) / 3.6))
+    else
+      -- No legal access at any condition, set a large weight
+      -- But keep the rate at least 1 m/s to keep it passable
+      result.backward_rate = math.max(1, math.min(result.backward_rate, (result.backward_speed * 0.2) / 3.6))
     end
   end
 end
@@ -678,9 +719,6 @@ end
 -- handle maxlength tags
 function WayHandlers.handle_length(profile,way,result,data)
   local keys = Sequence { 'maxlength' }
-  local forward, backward = Tags.get_forward_backward_by_set(way,data,keys)
-  forward = Measure.get_max_length(forward)
-  backward = Measure.get_max_length(backward)
 
   local allowedClassesNotForLargeVehicule = false
   for k, v in pairs(profile.classes) do
@@ -690,20 +728,81 @@ function WayHandlers.handle_length(profile,way,result,data)
     end
   end
 
-  if allowedClassesNotForLargeVehicule and forward and forward < profile.vehicle_large_length then
-    result.forward_classes["notForLargeVehicule"] = true
-  end
+  local forward = nil
+  local forward_conditional = nil
+  for _, key in ipairs(keys or {}) do
+    local length, _ = Tags.get_forward_backward_by_key(way,data,key)
+    if length then
+      length = Measure.get_max_length(length)
 
-  if allowedClassesNotForLargeVehicule and backward and backward < profile.vehicle_large_length then
-    result.backward_classes["notForLargeVehicule"] = true
+      if allowedClassesNotForLargeVehicule and length and length < profile.vehicle_large_length then
+        result.forward_classes["notForLargeVehicule"] = true
+      end
+      if length and (length <= profile.vehicle_length and (not forward or length < forward)) then
+        forward = length
+        forward_conditional, _ = Tags.get_forward_backward_by_key(way,data,key .. ':conditional')
+      end
+    end
   end
 
   if forward and forward < profile.vehicle_length then
-    result.forward_mode = mode.inaccessible
+    if forward_conditional and (string.match(forward_conditional, 'no(ne)? ?@') or string.match(forward_conditional, 'destination') or string.match(forward_conditional, 'delivery')) then
+      -- Discourage usage
+      -- But keep the rate at least 1 m/s to keep it passable
+      result.forward_rate = math.max(1, math.min(result.forward_rate, (result.forward_speed * 0.7) / 3.6))
+    else
+      -- No legal access at any condition, set a large length
+      -- But keep the rate at least 1 m/s to keep it passable
+      result.forward_rate = math.max(1, math.min(result.forward_rate, (result.forward_speed * 0.2) / 3.6))
+    end
+  end
+
+  local backward = nil
+  local backward_conditional = nil
+  for _, key in ipairs(keys or {}) do
+    local _, length = Tags.get_forward_backward_by_key(way,data,key)
+    if length then
+      length = Measure.get_max_length(length)
+
+      if allowedClassesNotForLargeVehicule and length and length < profile.vehicle_large_height then
+        result.backward_classes["notForLargeVehicule"] = true
+      end
+      if length and (length <= profile.vehicle_length and (not backward or length < backward)) then
+        backward = length
+        _, backward_conditional = Tags.get_forward_backward_by_key(way,data,key .. ':conditional')
+      end
+    end
   end
 
   if backward and backward < profile.vehicle_length then
-    result.backward_mode = mode.inaccessible
+    if backward_conditional and (string.match(backward_conditional, 'no(ne)? ?@') or string.match(backward_conditional, 'destination') or string.match(backward_conditional, 'delivery')) then
+      -- Discourage usage
+      -- But keep the rate at least 1 m/s to keep it passable
+      result.backward_rate = math.max(1, math.min(result.backward_rate, (result.backward_speed * 0.7) / 3.6))
+    else
+      -- No legal access at any condition, set a large length
+      -- But keep the rate at least 1 m/s to keep it passable
+      result.backward_rate = math.max(1, math.min(result.backward_rate, (result.backward_speed * 0.2) / 3.6))
+    end
+  end
+end
+
+-- handle hgv access tags
+function WayHandlers.handle_hgv_access(profile,way,result,data)
+  local keys = Sequence { 'hgv', 'goods' }
+  local forward, backward = Tags.get_forward_backward_by_set(way,data,keys)
+
+  local keys_conditional = Sequence { 'hgv:conditional', 'goods:conditional' }
+  local forward_conditional, backward_conditional = Tags.get_forward_backward_by_set(way,data,keys_conditional)
+
+  if forward == 'no' and (not forward_conditional or not(string.match(forward_conditional, 'yes') or string.match(forward_conditional, 'destination') or string.match(forward_conditional, 'delivery'))) then
+    -- No legal access at any condition, set a large weight
+    result.forward_rate = math.min(result.forward_rate, (result.forward_speed * 0.1) / 3.6)
+  end
+
+  if backward == 'no' and (not backward_conditional or not(string.match(backward_conditional, 'yes') or string.match(backward_conditional, 'destination') or string.match(backward_conditional, 'delivery'))) then
+    -- No legal access at any condition, set a large weight
+    result.backward_rate = math.min(result.backward_rate, (result.backward_speed * 0.1) / 3.6)
   end
 end
 
