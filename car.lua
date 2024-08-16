@@ -49,12 +49,31 @@ function setup()
     cardinal_directions       = false,
 
     -- Size of the vehicle, to be limited by physical restriction of the way
-    vehicle_height = 2.8, -- in meters
-    vehicle_width = 2.2, -- in meters
-
+    vehicle_height = 3.5, -- in meters
+    vehicle_width = 2.45, -- in meters
     -- Size of the vehicle, to be limited mostly by legal restriction of the way
-    vehicle_length = 6.0, -- in meters
-    vehicle_weight = 6000, -- in kilograms
+    vehicle_length = 8.3, -- in meters
+    vehicle_weight = 7500, -- in kilograms
+
+    -- vehicle_height = 3.6, -- in meters
+    -- vehicle_width = 2.55, -- in meters
+    -- vehicle_length = 9.5, -- in meters
+    -- vehicle_weight = 12000, -- in kilograms
+
+    -- vehicle_height = 3.8, -- in meters
+    -- vehicle_width = 2.55, -- in meters
+    -- vehicle_length = 10, -- in meters
+    -- vehicle_weight = 19000, -- in kilograms
+
+    -- vehicle_height = 3.8, -- in meters
+    -- vehicle_width = 2.55, -- in meters
+    -- vehicle_length = 11.5, -- in meters
+    -- vehicle_weight = 26000, -- in kilograms
+
+    -- vehicle_height = 4, -- in meters
+    -- vehicle_width = 2.60, -- in meters
+    -- vehicle_length = 12, -- in meters
+    -- vehicle_weight = 32000, -- in kilograms
 
     -- Large vehicule
     -- Size of the vehicle, to be limited by physical restriction of the way
