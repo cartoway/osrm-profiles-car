@@ -66,6 +66,26 @@ function setup()
     vehicle_length = 8.3, -- in meters
     vehicle_weight = 7500, -- in kilograms
 
+    -- vehicle_height = 3.6, -- in meters
+    -- vehicle_width = 2.55, -- in meters
+    -- vehicle_length = 9.5, -- in meters
+    -- vehicle_weight = 12000, -- in kilograms
+
+    -- vehicle_height = 3.8, -- in meters
+    -- vehicle_width = 2.55, -- in meters
+    -- vehicle_length = 10, -- in meters
+    -- vehicle_weight = 19000, -- in kilograms
+
+    -- vehicle_height = 3.8, -- in meters
+    -- vehicle_width = 2.55, -- in meters
+    -- vehicle_length = 11.5, -- in meters
+    -- vehicle_weight = 26000, -- in kilograms
+
+    -- vehicle_height = 4, -- in meters
+    -- vehicle_width = 2.60, -- in meters
+    -- vehicle_length = 12, -- in meters
+    -- vehicle_weight = 32000, -- in kilograms
+
     -- Large vehicule
     -- Size of the vehicle, to be limited by physical restriction of the way
     vehicle_large_height = 2.5, -- in meters, 2.5m is the height of van
