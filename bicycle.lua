@@ -38,8 +38,8 @@ function setup()
     use_public_transport      = true,
 
     -- Exclude narrow ways, in particular to route with cargo bike
-    width                     = nil, -- Cargo bike could 0.5 width, in meters
-    exclude_cargo_bike        = false,
+    width                     = 0.5, -- Cargo bike could 0.5 width, in meters
+    exclude_cargo_bike        = true,
 
     -- Maximum speed for recreational cycling
     vehicle_max_speed         = 21, -- in km/h, realistic for recreational bikers
