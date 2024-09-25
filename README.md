@@ -24,6 +24,8 @@ Based on [OSRM](https://github.com/Project-OSRM/osrm-backend/) car profiles.
 ```
 master - OSRM-Car
 └── common
+    ├── bicycle
+    │   └── cargo-bike
     ├── car-interurban
     │   └── car-urban
     └── car
