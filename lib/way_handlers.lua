@@ -243,6 +243,11 @@ function WayHandlers.access(profile,way,result,data)
   data.forward_access, data.backward_access =
     Tags.get_forward_backward_by_set(way,data,profile.access_tags_hierarchy)
 
+  if (way:get_location_tag('access') == 'destination') then
+    result.forward_restricted = true
+    result.backward_restricted = true
+  end
+
   -- only allow a subset of roads to be treated as restricted
   if profile.restricted_highway_whitelist[data.highway] then
       if profile.restricted_access_tag_list[data.forward_access] then
