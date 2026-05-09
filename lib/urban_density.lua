@@ -1,9 +1,29 @@
 local Urban_density = {}
+local DBI = require('DBI')
 
 function Urban_density.assert_urban_database()
-  -- Assert Urban database exists and contains data
-  local cur = assert(sql_conn:execute("SELECT * FROM urban LIMIT 1"))
-  assert(cur:fetch())
+  sql_conn = assert(DBI.Connect('DuckDB', ':memory:', 'read_only=1'))
+  assert(DBI.Do(sql_conn, "LOAD spatial"))
+  assert(DBI.Do(sql_conn, "CREATE TABLE urban AS SELECT code, CAST(geom AS GEOMETRY) AS geom FROM '" .. urban_density_path .."'"))
+  assert(DBI.Do(sql_conn, "CREATE INDEX urban_idx_geom ON urban USING RTREE(geom)"))
+
+  urban_statement = assert(sql_conn:prepare([[
+SELECT
+  code AS code,
+  SUM(l) AS l
+FROM (
+  SELECT
+    code,
+    ST_Length(ST_Intersection(geom, ST_GeomFromText(?::text))) / ST_Length(ST_GeomFromText(?::text)) AS l
+  FROM
+    urban
+  WHERE
+    ST_Length(ST_GeomFromText(?::text)) > 0 AND
+    ST_Intersects(geom, ST_GeomFromText(?::text))
+) AS t
+GROUP BY
+  code
+  ]]))
 end
 
 speeds_interurban = {
@@ -66,26 +86,6 @@ speeds_urban_dense = {
   default         =  8
 }
 
-urban_query = [[
-SELECT
-  code AS code,
-  SUM(l) AS l
-FROM (
-  SELECT
-    code,
-    ST_Length(ST_Intersection(geom, linestring)) / ST_Length(linestring) AS l
-  FROM
-    (SELECT ST_GeomFromText('LINESTRING(%s)', 4326) AS linestring) AS linestrings,
-    urban
-  WHERE
-    ST_Length(linestring) > 0 AND
-    ST_Intersects(geom, linestring)
-) AS t
-GROUP BY
-  code
-;
-]]
-
 function Urban_density.speed_profile(coefs, highway)
   if speeds_interurban[highway] and speeds_urban_dense[highway] and speeds_urban[highway] then
     return
@@ -112,25 +112,20 @@ function Urban_density.speed_coef_sql(way)
   if n <= 1 then
     return {0, 0, 0, 0}
   end
-  linestring = table.concat(linestring, ",")
-
-  local sql = urban_query:format(linestring)
-  local cur = assert(sql_conn:execute(sql))
+  linestring = "LINESTRING(" .. table.concat(linestring, ",") .. ")"
 
   local codes = {
-    ["1"] = 4, -- Continuous urban
-    ["2"] = 3, -- Discontinuous urban & Industrial or commercial
-    ["5"] = 2 -- Water bodies
+    [1] = 4, -- Continuous urban
+    [2] = 3, -- Discontinuous urban & Industrial or commercial
+    [5] = 2, -- Water bodies
   }
   local speeds = {1, 0, 0, 0}
 
-  row = cur:fetch ({}, "a")
-  while row do
-    speeds[1] = speeds[1] - row.l
-    local c = codes[row.code]
-    speeds[c] = row.l
-
-    row = cur:fetch (row, "a")
+  urban_statement:execute(linestring, linestring, linestring, linestring)
+  for row in urban_statement:rows(true) do
+    speeds[1] = speeds[1] - row['l']
+    local c = codes[row['code']]
+    speeds[c] = row['l']
   end
 
   return speeds
