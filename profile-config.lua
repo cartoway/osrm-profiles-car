@@ -1,5 +1,4 @@
-local postgres = require('luasql.postgres').postgres()
-sql_conn = assert(postgres:connect('postgresql://user:password@localhost/db_name'))
+urban_density_path = os.getenv('URBAN_DENSITY_PATH')
 
 local redis = require('redis')
-redis_conn = assert(redis.connect('localhost', 6379))
+redis_conn = assert(redis.connect(os.getenv('REDIS_HOST', 'localhost'), os.getenv('REDIS_PORT', 6379)))
