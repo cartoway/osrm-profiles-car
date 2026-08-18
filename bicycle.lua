@@ -7,6 +7,8 @@ Sequence = require('lib/sequence')
 Handlers = require("lib/way_handlers")
 TrafficSignal = require("lib/traffic_signal")
 find_access_tag = require("lib/access").find_access_tag
+resolve_access = require("lib/access").resolve_access
+Tags = require('lib/tags')
 limit = require("lib/maxspeed").limit
 Measure = require("lib/measure")
 
@@ -21,7 +23,7 @@ function setup()
       --weight_name                   = 'cyclability',
       weight_name                   = 'duration',
       process_call_tagless_node     = false,
-      max_speed_for_map_matching    = 110/3.6, -- kmph -> m/s
+      max_speed_for_map_matching    = 40/3.6, -- kmph -> m/s (reduced from 110 to realistic bicycle speed)
       use_turn_restrictions         = false,
       continue_straight_at_waypoint = false,
       mode_change_penalty           = 30,
@@ -38,6 +40,9 @@ function setup()
     -- Exclude narrow ways, in particular to route with cargo bike
     width                     = nil, -- Cargo bike could 0.5 width, in meters
     exclude_cargo_bike        = false,
+
+    -- Maximum speed for recreational cycling
+    vehicle_max_speed         = 21, -- in km/h, realistic for recreational bikers
 
     allowed_start_modes = Set {
       mode.cycling,
@@ -134,7 +139,6 @@ function setup()
       residential = default_speed,
       unclassified = default_speed,
       living_street = default_speed,
-      road = default_speed,
       service = default_speed,
       track = 12,
       path = 13
@@ -195,6 +199,7 @@ function setup()
       ground = 10,
       dirt = 8,
       earth = 6,
+      laterite = 5,
       grass = 6,
       mud = 3,
       sand = 3,
@@ -221,7 +226,8 @@ function setup()
     avoid = Set {
       'impassable',
       'construction',
-      'proposed'
+      'proposed',
+      'motorroad'
     }
   }
 end
@@ -241,7 +247,11 @@ function process_node(profile, node, result)
   else
     local barrier = node:get_value_by_key("barrier")
     if barrier and "" ~= barrier then
-      if profile.barrier_blacklist[barrier] then
+      -- make an exception for fence with sensory=audible/audio (virtual livestock fences)
+      local sensory = node:get_value_by_key("sensory")
+      local audible_fence = barrier == "fence" and sensory and (sensory == "audible" or sensory == "audio")
+
+      if profile.barrier_blacklist[barrier] and not audible_fence then
         result.barrier = true
       end
     end
@@ -292,9 +302,16 @@ function handle_bicycle_tags(profile,way,result,data)
     return false
   end
 
-  -- access
+  -- access (supports directional tags like vehicle:forward=agricultural)
   data.access = find_access_tag(way, profile.access_tags_hierarchy)
-  if data.access and profile.access_tag_blacklist[data.access] then
+  data.forward_access, data.backward_access =
+      Tags.get_forward_backward_by_set(way, data, profile.access_tags_hierarchy)
+  data.forward_access = resolve_access(data.forward_access, profile)
+  data.backward_access = resolve_access(data.backward_access, profile)
+  if (data.access and profile.access_tag_blacklist[data.access])
+      or (data.forward_access and data.backward_access
+          and profile.access_tag_blacklist[data.forward_access]
+          and profile.access_tag_blacklist[data.backward_access]) then
     return false
   end
 
@@ -306,7 +323,8 @@ function handle_bicycle_tags(profile,way,result,data)
   data.barrier = way:get_value_by_key("barrier")
   data.oneway = way:get_value_by_key("oneway")
   data.oneway_bicycle = way:get_value_by_key("oneway:bicycle")
-  data.cycleway = way:get_value_by_key("cycleway")
+  local cycleway = way:get_value_by_key("cycleway")
+  data.cycleway = cycleway and cycleway or way:get_value_by_key("cycleway:both")
   data.cycleway_left = way:get_value_by_key("cycleway:left")
   data.cycleway_right = way:get_value_by_key("cycleway:right")
   data.duration = way:get_value_by_key("duration")
@@ -327,7 +345,8 @@ function handle_bicycle_tags(profile,way,result,data)
   -- width should be after bike_push
   width_handler(profile,way,result,data)
 
-  -- maxspeed
+  -- Apply maxspeed to respect legal speed limits when lower than bicycle speed
+  -- This ensures bicycles adhere to speed restrictions (e.g., maxspeed=10 in residential areas)
   limit( result, data.maxspeed, data.maxspeed_forward, data.maxspeed_backward )
 
   -- not routable if no speed assigned
@@ -340,9 +359,49 @@ function handle_bicycle_tags(profile,way,result,data)
   end
 
   safety_handler(profile,way,result,data)
+
+  -- Apply per-direction access blacklisting for directional tags
+  -- (e.g. vehicle:forward=agricultural blocks only the forward direction)
+  if data.forward_access and profile.access_tag_blacklist[data.forward_access] then
+    result.forward_mode = mode.inaccessible
+    result.forward_speed = 0
+  end
+  if data.backward_access and profile.access_tag_blacklist[data.backward_access] then
+    result.backward_mode = mode.inaccessible
+    result.backward_speed = 0
+  end
 end
 
+-- Block ways where the cycleway is mapped as a separate parallel way.
+-- Tags like `cycleway=separate`, `cycleway:both=separate`, or
+-- `cycleway:left/right=separate` indicate that the bicycle path is
+-- already captured by a distinct OSM way, so routing along this
+-- carriageway would duplicate it. Explicit bicycle access tags
+-- (e.g. bicycle=yes/permissive/designated/destination) can still override this inference.
+local function handle_cycleway_separate(profile, way, result, data)
+  local cycleway = data.cycleway or way:get_value_by_key('cycleway')
+  local cycleway_both = way:get_value_by_key('cycleway:both')
+  local cycleway_left = data.cycleway_left or way:get_value_by_key('cycleway:left')
+  local cycleway_right = data.cycleway_right or way:get_value_by_key('cycleway:right')
 
+  if cycleway ~= 'separate' and cycleway_both ~= 'separate'
+      and cycleway_left ~= 'separate' and cycleway_right ~= 'separate' then
+    return
+  end
+
+  -- Only an explicit bicycle=yes/permissive/designated/destination tag overrides
+  -- the cycleway inference; values resolved through the vehicle or access hierarchy
+  -- (e.g. vehicle=yes) are intentionally not sufficient.
+  local bicycle_tag = way:get_value_by_key('bicycle')
+  local bicycle_override = Set { 'yes', 'permissive', 'designated', 'destination' }
+  if bicycle_tag and bicycle_override[bicycle_tag] then
+    return
+  end
+
+  result.forward_mode = mode.inaccessible
+  result.backward_mode = mode.inaccessible
+  return false
+end
 
 function speed_handler(profile,way,result,data)
 
@@ -667,8 +726,15 @@ function process_way(profile, way, result)
     -- our main handler
     handle_bicycle_tags,
 
+    -- block ways whose cycleway is separately mapped (cycleway:*=separate),
+    -- unless bicycle access is explicitly whitelisted
+    handle_cycleway_separate,
+
     -- compute speed taking into account way type, maxspeed tags, etc.
     WayHandlers.surface,
+
+    -- apply vehicle-specific maximum speed cap (e.g., 21 km/h for recreational bikers)
+    WayHandlers.vehicle_speed_cap,
 
     -- handle turn lanes and road classification, used for guidance
     WayHandlers.classification,
