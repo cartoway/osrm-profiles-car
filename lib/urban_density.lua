@@ -95,13 +95,14 @@ speeds_urban_dense = {
   default         =  8
 }
 
-function Urban_density.speed_profile(coefs, highway)
+function Urban_density.speed_profile(coefs, highway, speed_adjustment)
   if speeds_interurban[highway] and speeds_urban_dense[highway] and speeds_urban[highway] then
-    return
+    return (
       coefs[1] * speeds_interurban[highway] +
       coefs[2] * speeds_urban[highway] +
       coefs[3] * speeds_urban[highway] +
       coefs[4] * speeds_urban_dense[highway]
+    ) * speed_adjustment
   end
 end
 
@@ -171,7 +172,7 @@ local max_speeds = {
 
 local max_speeds_bounds = {{nil, 130}, {130, 110}, {110, 90}, {90, 50}, {50, 30}, {30, 20}, {20, 0}}
 
-function Urban_density.max_speed_coef(coefs, max_speed)
+function Urban_density.max_speed_coef(coefs, max_speed, speed_adjustment)
   local speeds = max_speeds[max_speed]
 
   if not speeds then
@@ -201,25 +202,29 @@ function Urban_density.max_speed_coef(coefs, max_speed)
     }
   end
 
-  return
+  return (
     coefs[1] * speeds[1] +
     coefs[2] * speeds[2] +
     coefs[3] * speeds[3] +
     coefs[4] * speeds[4]
+  ) * speed_adjustment
 end
 
 -- Helpers functions
 
 function Urban_density.default_speed(way)
-  return Urban_density.speed_profile(Urban_density.speed_coef(way), 'default')
+  local speed_adjustment = way:get_location_tag('speed_adjustment') or 1
+  return Urban_density.speed_profile(Urban_density.speed_coef(way), 'default', speed_adjustment)
 end
 
 function Urban_density.speeds(way)
-  return Urban_density.speed_profile(Urban_density.speed_coef(way), way:get_value_by_key('highway'))
+  local speed_adjustment = way:get_location_tag('speed_adjustment') or 1
+  return Urban_density.speed_profile(Urban_density.speed_coef(way), way:get_value_by_key('highway'), speed_adjustment)
 end
 
 function Urban_density.maxspeeds(way, max_speed)
-  return Urban_density.max_speed_coef(Urban_density.speed_coef(way), max_speed)
+  local speed_adjustment = way:get_location_tag('speed_adjustment') or 1
+  return Urban_density.max_speed_coef(Urban_density.speed_coef(way), max_speed, speed_adjustment)
 end
 
 return Urban_density
