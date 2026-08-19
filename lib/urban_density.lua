@@ -54,15 +54,15 @@ speeds_urban = {
   motorway_link   = 45,
   trunk           = 75,
   trunk_link      = 37,
-  primary         = 33,
-  primary_link    = 15,
-  secondary       = 28,
-  secondary_link  = 14,
-  tertiary        = 24,
-  tertiary_link   = 12,
-  unclassified    = 22,
-  residential     = 21,
-  living_street   = 13,
+  primary         = 45,
+  primary_link    = 25,
+  secondary       = 35,
+  secondary_link  = 22,
+  tertiary        = 27,
+  tertiary_link   = 23,
+  unclassified    = 25,
+  residential     = 25,
+  living_street   = 22,
   service         = 13,
   pedestrian      =  5,
   track           =  5,
@@ -73,26 +73,26 @@ speeds_urban = {
 }
 
 speeds_urban_dense = {
-  motorway        = 70,
-  motorway_link   = 35,
-  trunk           = 58,
-  trunk_link      = 27,
-  primary         = 15,
-  primary_link    =  9,
-  secondary       = 12,
-  secondary_link  =  7,
-  tertiary        = 10,
-  tertiary_link   =  5,
-  unclassified    =  9,
-  residential     =  9,
-  living_street   =  8,
-  service         =  8,
+  motorway        = 90,
+  motorway_link   = 45,
+  trunk           = 75,
+  trunk_link      = 37,
+  primary         = 45,
+  primary_link    = 25,
+  secondary       = 22,
+  secondary_link  = 18,
+  tertiary        = 18,
+  tertiary_link   = 15,
+  unclassified    = 18,
+  residential     = 15,
+  living_street   = 15,
+  service         = 13,
   pedestrian      =  5,
   track           =  5,
   -- winter highway types (OSM highway=winter_road / highway=ice_road)
   winter_road     = 20,
   ice_road        = 15,
-  default         =  8
+  default         = 13
 }
 
 function Urban_density.speed_profile(coefs, highway, speed_adjustment)
@@ -163,10 +163,10 @@ end
 local max_speeds = {
   [130] = {115, 90, 90, 70},
   [110] = {100, 75, 75, 58},
-  [90] = {85, 60, 60, 43},
-  [50] = {47, 33, 33, 15},
-  [30] = {29, 19, 19, 9},
-  [20] = {20, 13, 13, 8},
+  [90] = {85, 60, 60, 40},
+  [50] = {47, 45, 40, 40},
+  [30] = {29, 25, 25, 20},
+  [20] = {20, 20, 20, 18},
   [0] = {0, 0, 0, 0}
 }
 
