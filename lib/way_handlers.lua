@@ -544,9 +544,7 @@ end
 -- handle maxheight tags
 function WayHandlers.handle_height(profile,way,result,data)
   local keys = Sequence { 'maxheight:physical', 'maxheight' }
-  local forward, backward = Tags.get_forward_backward_by_set(way,data,keys)
-  forward = Measure.get_max_height(forward,way)
-  backward = Measure.get_max_height(backward,way)
+  local forwards, backwards = Tags.get_forward_backward_list_from_set(way,data,keys)
 
   local allowedClassesNotForLargeVehicule = false
   for k, v in pairs(profile.classes) do
@@ -556,27 +554,37 @@ function WayHandlers.handle_height(profile,way,result,data)
     end
   end
 
-  if allowedClassesNotForLargeVehicule and forward and forward < profile.vehicle_large_height then
-    result.forward_classes["notForLargeVehicule"] = true
+  for _, height in ipairs(forwards or {}) do
+    height = Measure.get_max_height(height, way)
+
+    if allowedClassesNotForLargeVehicule and height and height < profile.vehicle_large_height then
+      result.forward_classes["notForLargeVehicule"] = true
+    end
+
+    if height and height < profile.vehicle_height then
+      result.forward_mode = mode.inaccessible
+      break
+    end
   end
 
-  if allowedClassesNotForLargeVehicule and backward and backward < profile.vehicle_large_height then
-    result.backward_classes["notForLargeVehicule"] = true
-  end
+  for _, height in ipairs(backwards or {}) do
+    height = Measure.get_max_height(height, way)
 
-  if forward and forward < profile.vehicle_height then
-    result.forward_mode = mode.inaccessible
-  end
+    if allowedClassesNotForLargeVehicule and height and height < profile.vehicle_large_height then
+      result.backward_classes["notForLargeVehicule"] = true
+    end
 
-  if backward and backward < profile.vehicle_height then
-    result.backward_mode = mode.inaccessible
+    if height and height < profile.vehicle_height then
+      result.backward_mode = mode.inaccessible
+      break
+    end
   end
 end
 
 -- handle maxwidth tags
 function WayHandlers.handle_width(profile,way,result,data)
   local keys = Sequence { 'maxwidth:physical', 'maxwidth', 'width', 'est_width' }
-  local forward, backward = Tags.get_forward_backward_by_set(way,data,keys)
+  local forwards, backwards = Tags.get_forward_backward_list_from_set(way,data,keys)
   local narrow = way:get_value_by_key('narrow')
 
   local allowedClassesNotForLargeVehicule = false
@@ -587,27 +595,46 @@ function WayHandlers.handle_width(profile,way,result,data)
     end
   end
 
-  if ((forward and forward == 'narrow') or (narrow and narrow == 'yes')) and profile.vehicle_width > 2.2 then
-    result.forward_mode = mode.inaccessible
-  elseif forward then
-    forward = Measure.get_max_width(forward)
-    if allowedClassesNotForLargeVehicule and forward and forward <  profile.vehicle_large_width then
-      result.forward_classes["notForLargeVehicule"] = true
+  if narrow and narrow == 'yes' then
+    if not forwards then
+      forwards = { 'narrow' }
+    else
+      table.insert(forwards, 'narrow')
     end
-    if allowedClassesNotForLargeVehicule and forward and forward <= profile.vehicle_width then
-      result.forward_mode = mode.inaccessible
+    if not backwards then
+      backwards = { 'narrow' }
+    else
+      table.insert(backwards, 'narrow')
     end
   end
 
-  if ((backward and backward == 'narrow') or (narrow and narrow == 'yes')) and profile.vehicle_width > 2.2 then
-    result.backward_mode = mode.inaccessible
-  elseif backward then
-    backward = Measure.get_max_width(backward)
-    if allowedClassesNotForLargeVehicule and backward and backward <  profile.vehicle_large_width then
+  for _, width in ipairs(forwards or {}) do
+    if width == 'narrow' then
+      width = 2.2
+    else
+      width = Measure.get_max_width(width)
+    end
+    if allowedClassesNotForLargeVehicule and width and width <  profile.vehicle_large_width then
+      result.forward_classes["notForLargeVehicule"] = true
+    end
+    if width and width <= profile.vehicle_width then
+      result.forward_mode = mode.inaccessible
+      break
+    end
+  end
+
+  for _, width in ipairs(backwards or {}) do
+    if width == 'narrow' then
+      width = 2.2
+    else
+      width = Measure.get_max_width(width)
+    end
+    if allowedClassesNotForLargeVehicule and width and width <  profile.vehicle_large_width then
       result.backward_classes["notForLargeVehicule"] = true
     end
-    if backward and backward <= profile.vehicle_width then
+    if width and width <= profile.vehicle_width then
       result.backward_mode = mode.inaccessible
+      break
     end
   end
 end
@@ -615,9 +642,7 @@ end
 -- handle maxweight tags
 function WayHandlers.handle_weight(profile,way,result,data)
   local keys = Sequence { 'maxweightrating', 'maxweight' }
-  local forward, backward = Tags.get_forward_backward_by_set(way,data,keys)
-  forward = Measure.get_max_weight(forward)
-  backward = Measure.get_max_weight(backward)
+  local forwards, backwards = Tags.get_forward_backward_list_from_set(way,data,keys)
 
   local allowedClassesNotForLargeVehicule = false
   for k, v in pairs(profile.classes) do
@@ -627,20 +652,26 @@ function WayHandlers.handle_weight(profile,way,result,data)
     end
   end
 
-  if allowedClassesNotForLargeVehicule and forward and forward < profile.vehicle_large_weight then
-    result.forward_classes["notForLargeVehicule"] = true
+  for _, weight in ipairs(forwards or {}) do
+    weight = Measure.get_max_weight(weight)
+    if allowedClassesNotForLargeVehicule and weight and weight < profile.vehicle_large_weight then
+      result.forward_classes["notForLargeVehicule"] = true
+    end
+    if weight and weight < profile.vehicle_weight then
+      result.forward_mode = mode.inaccessible
+      break
+    end
   end
 
-  if allowedClassesNotForLargeVehicule and backward and backward < profile.vehicle_large_weight then
-    result.backward_classes["notForLargeVehicule"] = true
-  end
-
-  if forward and forward < profile.vehicle_weight then
-    result.forward_mode = mode.inaccessible
-  end
-
-  if backward and backward < profile.vehicle_weight then
-    result.backward_mode = mode.inaccessible
+  for _, weight in ipairs(backwards or {}) do
+    weight = Measure.get_max_weight(weight)
+    if allowedClassesNotForLargeVehicule and weight and weight < profile.vehicle_large_weight then
+      result.backward_classes["notForLargeVehicule"] = true
+    end
+    if weight and weight < profile.vehicle_weight then
+      result.backward_mode = mode.inaccessible
+      break
+    end
   end
 end
 
